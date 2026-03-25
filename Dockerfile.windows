@@ -1,0 +1,57 @@
+# Dockerfile.windows
+# Multi-stage for Windows containers (dev/build/prod)
+# NOTE: may require a Windows-compatible Node image tag on your system.
+FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS base
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+# Устанавливаем Node.js вручную (Node 20.x LTS) — скачиваем zip и распаковываем
+ARG NODE_VERSION=20.19.0
+ENV NODE_DIR="C:\\nodejs"
+RUN Invoke-WebRequest -Uri "https://nodejs.org/dist/v${env:NODE_VERSION}/node-v${env:NODE_VERSION}-win-x64.zip" -OutFile C:\\node.zip
+RUN Expand-Archive -Path C:\\node.zip -DestinationPath C:\\ -Force
+RUN Remove-Item -Force C:\\node.zip; \
+    Write-Host '--- root listing after expand ---'; \
+    Get-ChildItem -Path C:\\ | Select-Object Name,FullName | Out-File C:\\root_listing.txt; Get-Content C:\\root_listing.txt
+RUN if (Test-Path "C:\\node-v${env:NODE_VERSION}-win-x64") { Rename-Item -Path "C:\\node-v${env:NODE_VERSION}-win-x64" -NewName C:\\nodejs } elseif (-not (Test-Path $env:NODE_DIR)) { New-Item -ItemType Directory -Path $env:NODE_DIR | Out-Null } ; \
+    Get-ChildItem -Path $env:NODE_DIR -Recurse | Select-Object FullName,Length | Out-File C:\\node_install_listing.txt; Get-Content C:\\node_install_listing.txt; \
+    Write-Host '--- checking C:\\Program Files\\nodejs ---'; \
+    if (Test-Path 'C:\\Program Files\\nodejs') { Get-ChildItem 'C:\\Program Files\\nodejs' -Recurse | Select-Object FullName | Out-File C:\\program_files_node_listing.txt; Get-Content C:\\program_files_node_listing.txt } else { Write-Host 'no program files nodejs' }; \
+    Write-Host '--- where.exe node/npm ---'; \
+    & where.exe node 2>&1 | Out-File C:\\where_node.txt; Get-Content C:\\where_node.txt; \
+    & where.exe npm 2>&1 | Out-File C:\\where_npm.txt; Get-Content C:\\where_npm.txt; \
+    Get-Command node -ErrorAction SilentlyContinue | Out-File C:\\get_command_node.txt; Get-Content C:\\get_command_node.txt; \
+    Get-Command npm -ErrorAction SilentlyContinue | Out-File C:\\get_command_npm.txt; Get-Content C:\\get_command_npm.txt
+
+# Не делаем динамическую подстановку PATH здесь (неподдерживаемая синтаксиса в Dockerfile for Windows)
+
+FROM base AS deps
+WORKDIR C:\\app
+COPY package*.json ./
+ENV PATH="C:\\nodejs;C:\\Windows\\System32"
+RUN & 'C:\\nodejs\\npm.cmd' ci
+
+FROM base AS dev
+WORKDIR C:\\app
+COPY --from=deps C:\\app\node_modules C:\\app\node_modules
+COPY . .
+EXPOSE 5173
+CMD ["npm","run","dev"]
+
+FROM base AS build
+WORKDIR C:\\app
+COPY --from=deps C:\\app\node_modules C:\\app\node_modules
+COPY . .
+ENV PATH="C:\\nodejs;C:\\Windows\\System32"
+RUN & 'C:\\nodejs\\npm.cmd' run build
+
+FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS prod
+WORKDIR C:\\app
+# Копируем Node runtime в прод-образ и статику
+COPY --from=build C:\\app\dist C:\\app\dist
+# Copy node runtime to C:\nodejs in prod image
+COPY --from=base "C:\\nodejs" "C:\\nodejs"
+ENV PATH="C:\\nodejs;C:\\Windows\\System32"
+# Устанавливаем простой http-server глобально
+RUN & 'C:\\nodejs\\npm.cmd' install -g http-server
+EXPOSE 80
+CMD ["http-server","C:\\app\\dist","-p","80"]

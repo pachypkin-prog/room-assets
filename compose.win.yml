@@ -1,0 +1,14 @@
+# compose.win.yml — Windows variant for Docker Compose
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:C:\\app
+      - C:\\app\\node_modules
+    environment:
+      - WATCHPACK_POLLING=true

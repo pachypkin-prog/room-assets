@@ -1,0 +1,14 @@
+# compose.dev.yml
+services:
+  web:
+    platform: linux/amd64
+    build:
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - WATCHPACK_POLLING=true
+      - HOST=0.0.0.0

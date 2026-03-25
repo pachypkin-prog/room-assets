@@ -1,0 +1,62 @@
+{
+  "rooms": [
+    {
+      "id": "r-101",
+      "name": "Аудитория 101",
+      "capacity": 30,
+      "features": ["projector", "whiteboard"]
+    },
+    {
+      "id": "r-203",
+      "name": "Аудитория 203",
+      "capacity": 20,
+      "features": ["sound_system"]
+    },
+    {
+      "id": "r-305",
+      "name": "Аудитория 305",
+      "capacity": 50,
+      "features": ["projector", "whiteboard", "sound_system"]
+    }
+  ],
+  "assets": [
+    {
+      "id": "a-proj-1",
+      "name": "Проектор Epson",
+      "inventoryCode": "PRJ001",
+      "status": "available"
+    },
+    {
+      "id": "a-proj-2",
+      "name": "Проектор Sony",
+      "inventoryCode": "PRJ002",
+      "status": "available"
+    },
+    {
+      "id": "a-mic-1",
+      "name": "Микрофон Shure",
+      "inventoryCode": "MIC001",
+      "status": "maintenance"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "b-1",
+      "resourceType": "room",
+      "resourceId": "r-101",
+      "title": "Семинар по React",
+      "start": "2025-09-05T08:00:00Z",
+      "end": "2025-09-05T09:30:00Z",
+      "notes": "Нужен HDMI кабель"
+    },
+    {
+      "id": "b-2",
+      "resourceType": "asset",
+      "resourceId": "a-proj-1",
+      "title": "Презентация компании",
+      "start": "2025-09-05T10:00:00Z",
+      "end": "2025-09-05T11:00:00Z",
+      "notes": "Потребуется USB кабель"
+    }
+  ]
+}
