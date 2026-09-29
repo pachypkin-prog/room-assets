@@ -5,9 +5,9 @@ import path from 'path';
 // https://vite.dev/config/
 export default defineConfig({
    base: '/room-assets/',
-  plugins: [react()],
-  resolve: {
-    alias: {
+   plugins: [react()],
+   resolve: {
+   alias: {
       '@': path.resolve(__dirname, 'src'),
     },
   },
